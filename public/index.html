@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MCQ Battle</title>
+</head>
+<body>
+    <div id="lobby">
+        <input type="text" id="roomInput" placeholder="Enter room name">
+        <button id="createRoomBtn">Create Room</button>
+        <button id="joinRoomBtn">Join Room</button>
+    </div>
+    <div id="game" style="display:none;">
+        <div id="question"></div>
+        <div id="answers"></div>
+        <div id="scores"></div>
+    </div>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        const lobby = document.getElementById('lobby');
+        const game = document.getElementById('game');
+        const roomInput = document.getElementById('roomInput');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const joinRoomBtn = document.getElementById('joinRoomBtn');
+        const questionDiv = document.getElementById('question');
+        const answersDiv = document.getElementById('answers');
+        const scoresDiv = document.getElementById('scores');
+
+        createRoomBtn.addEventListener('click', () => {
+            const room = roomInput.value;
+            socket.emit('createRoom', room);
+        });
+
+        joinRoomBtn.addEventListener('click', () => {
+            const room = roomInput.value;
+            socket.emit('joinRoom', room);
+        });
+
+        socket.on('roomCreated', (room) => {
+            console.log(`Room ${room} created`);
+        });
+
+        socket.on('roomJoined', (room) => {
+            console.log(`Joined room ${room}`);
+        });
+
+        socket.on('roomFull', () => {
+            alert('Room is full');
+        });
+
+        socket.on('startGame', () => {
+            lobby.style.display = 'none';
+            game.style.display = 'block';
+            startGame();
+        });
+
+        socket.on('updateScores', (scores) => {
+            scoresDiv.innerHTML = 'Scores: ' + JSON.stringify(scores);
+        });
+
+        function startGame() {
+            // Simulate a question
+            const question = {
+                text: 'What is the capital of France?',
+                answers: [
+                    { text: 'Paris', correct: true },
+                    { text: 'London', correct: false },
+                    { text: 'Berlin', correct: false },
+                    { text: 'Madrid', correct: false }
+                ]
+            };
+            questionDiv.innerHTML = question.text;
+            answersDiv.innerHTML = '';
+            question.answers.forEach((answer, index) => {
+                const button = document.createElement('button');
+                button.innerHTML = answer.text;
+                button.addEventListener('click', () => {
+                    socket.emit('submitAnswer', { room: roomInput.value, answer });
+                });
+                answersDiv.appendChild(button);
+            });
+        }
+    </script>
+</body>
+</html>
